@@ -2,10 +2,12 @@
 
 class Program
 {
-    static readonly List<Order> orders = [];
-
     static void Main()
     {
+        using (var context = new OrderContext())
+        {
+            context.Database.EnsureCreated();
+        }
         while (true)
         {
             Console.Clear();
@@ -91,7 +93,12 @@ class Program
             TypeOfPayment paymentType = (Console.ReadLine() == "1") ? TypeOfPayment.Card : TypeOfPayment.Cash;
 
             Order newOrder = new(productName, orderPrice, clientType, address, paymentType);
-            orders.Add(newOrder);
+
+            using (var context = new OrderContext())
+            {
+                context.Orders.Add(newOrder);
+                context.SaveChanges();
+            }
             Console.WriteLine("Order created successfully!");
         }
         catch (Exception ex)
@@ -104,40 +111,46 @@ class Program
 
     static void ProcessWarehouse()
     {
-        var order = SelectOrder(Status.New);
+        using var context = new OrderContext();
+        var order = SelectOrder(context, Status.New);
         if (order == null) return;
 
         if (order.PaymentType == TypeOfPayment.Cash && order.OrderPrice >= 2500)
         {
-            order.OrderStatus = Status.ReturnedToClient;
+            order.UpdateOrderStatus(Status.ReturnedToClient);
             Console.WriteLine("Order returned to client due to high cash payment.");
         }
         else
         {
-            order.OrderStatus = Status.InWarehouse;
+            order.UpdateOrderStatus(Status.InWarehouse);
             Console.WriteLine("Order moved to warehouse.");
         }
+        context.SaveChanges();
         Console.WriteLine("Press any key to continue...");
         Console.ReadKey();
     }
 
     static void ProcessShipping()
     {
-        var order = SelectOrder(Status.InWarehouse);
-        if (order == null) return;
+        using (var context = new OrderContext())
+        {
+            var order = SelectOrder(context, Status.InWarehouse);
+            if (order == null) return;
 
-        if (string.IsNullOrWhiteSpace(order.Address))
-        {
-            order.OrderStatus = Status.Error;
-            Console.WriteLine("Error: Order has no shipping address.");
-        }
-        else
-        {
-            order.OrderStatus = Status.InDelivery;
-            Console.WriteLine("Order is now in delivery. It will now be shipped.");
-            Thread.Sleep(1000);
-            order.OrderStatus = Status.Closed;
-            Console.WriteLine("Order has been shipped and closed.");
+            if (string.IsNullOrWhiteSpace(order.Address))
+            {
+                order.UpdateOrderStatus(Status.Error);
+                Console.WriteLine("Error: Order has no shipping address.");
+            }
+            else
+            {
+                order.UpdateOrderStatus(Status.InDelivery);
+                Console.WriteLine("Order is now in delivery. It will now be shipped.");
+                Thread.Sleep(1000);
+                order.UpdateOrderStatus(Status.Closed);
+                Console.WriteLine("Order has been shipped and closed.");
+            }
+            context.SaveChanges();
         }
         Console.WriteLine("Press any key to continue...");
         Console.ReadKey();
@@ -145,24 +158,28 @@ class Program
 
     static void ViewOrders()
     {
-        if (orders.Count == 0)
+        using (var context = new OrderContext())
         {
-            Console.WriteLine("No orders available.");
-        }
-        else
-        {
-            foreach (var order in orders)
+            var orders = context.Orders.ToList();
+            if (orders.Count == 0)
             {
-                Console.WriteLine(order.ToString());
+                Console.WriteLine("No orders available.");
+            }
+            else
+            {
+                foreach (var order in orders)
+                {
+                    Console.WriteLine(order.ToString());
+                }
             }
         }
         Console.WriteLine("Press any key to continue...");
         Console.ReadKey();
     }
 
-    static Order? SelectOrder(Status status)
+    static Order? SelectOrder(OrderContext context, Status status)
     {
-        var availableOrders = orders.Where(o => o.OrderStatus == status).ToList();
+        var availableOrders = context.Orders.Where(o => o.OrderStatus == status).ToList();
         if (availableOrders.Count == 0)
         {
             Console.WriteLine("No available orders with the required status.");

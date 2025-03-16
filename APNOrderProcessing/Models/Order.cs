@@ -21,14 +21,15 @@
     }
     public class Order
     {
-        public string ProductName { get; set; }
-        public decimal OrderPrice { get; set; }
-        public TypeOfClient ClientType { get; set; }
+        public int Id { get; private set; }
+        public string ProductName { get; private set; }
+        public decimal OrderPrice { get; private set; }
+        public TypeOfClient ClientType { get; private set; }
 
-        public string? Address { get; set; } = string.Empty;
-        public TypeOfPayment PaymentType { get; set; }
+        public string? Address { get; private set; } = string.Empty;
+        public TypeOfPayment PaymentType { get; private set; }
 
-        public Status OrderStatus { get; set; }
+        public Status OrderStatus { get; private set; }
 
         public Order(
             string productName,
@@ -67,4 +68,9 @@
         {
             return $"Product name: {ProductName}, Order price: {OrderPrice}, Client Type: {ClientType}, Address: {Address}, Payment type: {PaymentType}, Order status: {OrderStatus}";
         }
+        public void UpdateOrderStatus(Status newStatus)
+        {
+            OrderStatus = newStatus;
+        }
+
     } }
