@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Authentication;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace APNOrderProcessing.Models
+﻿namespace APNOrderProcessing.Models
 {
     public enum TypeOfClient
     {
@@ -69,9 +62,9 @@ namespace APNOrderProcessing.Models
 
             if (PaymentType == TypeOfPayment.Cash && orderPrice >= 2500)
                 OrderStatus = Status.ReturnedToClient;
-
-
-
-
+        }
+        public override string ToString()
+        {
+            return $"Product name: {ProductName}, Order price: {OrderPrice}, Client Type: {ClientType}, Address: {Address}, Payment type: {PaymentType}, Order status: {OrderStatus}";
         }
     } }
